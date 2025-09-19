@@ -53,12 +53,24 @@ void process(char *input_file, char *output_dir)
     unsigned char *input_bits = FreeImage_GetScanLine(input_bitmap, y);
     unsigned char *output_bits = FreeImage_GetScanLine(output_bitmap, y);
     for (int x = 0; x < input_width; x++) {
-      output_bits[FI_RGBA_RED] = input_bits[FI_RGBA_RED];
-      output_bits[FI_RGBA_GREEN] = input_bits[FI_RGBA_GREEN];
-      output_bits[FI_RGBA_BLUE] = input_bits[FI_RGBA_BLUE];
-      if (input_bits_per_pixel == 32) output_bits[FI_RGBA_ALPHA] = input_bits[FI_RGBA_ALPHA];
-      input_bits += input_bits_per_pixel;
-      output_bits += input_bits_per_pixel;
+      // 0.299 * Red + 0.587 * Green + 0.114 * Blue
+      float r, g, b, gray;
+      r = input_bits[FI_RGBA_RED];
+      g = input_bits[FI_RGBA_GREEN];
+      b = input_bits[FI_RGBA_BLUE];
+      gray = 0.229f * r + 0.587f * g + 0.114 * b;
+      if (gray > 255.0f) gray = 255.0f;
+      output_bits[FI_RGBA_RED] = gray;
+      output_bits[FI_RGBA_GREEN] = gray;
+      output_bits[FI_RGBA_BLUE] = gray;
+      if (input_bits_per_pixel == 32) {
+        output_bits[FI_RGBA_ALPHA] = input_bits[FI_RGBA_ALPHA];
+        input_bits += 4;
+        output_bits += 4;
+      } else {
+        input_bits += 3;
+        output_bits += 3;
+      }
     }
   }
 
