@@ -25,12 +25,22 @@ void process(char *input_file, char *output_dir)
 
   // Get input image information.
   FREE_IMAGE_TYPE input_fit = FreeImage_GetImageType(input_bitmap);
+  if (input_fit != FIT_BITMAP) {
+    std::cout << "  Image type not supported (" << input_fit << "!= FIT_BITMAP (" << FIT_BITMAP << "))!" << std::endl;
+    FreeImage_Unload(input_bitmap);
+    return;
+  }
   unsigned int input_bits_per_pixel = FreeImage_GetBPP(input_bitmap);
+  if (input_bits_per_pixel != 24 && input_bits_per_pixel != 32) {
+    std::cout << "  Bits per pixel not supported (" << input_bits_per_pixel << " != 24 or 32)" << std::endl;
+    FreeImage_Unload(input_bitmap);
+    return;
+  }
   unsigned int input_width = FreeImage_GetWidth(input_bitmap); // In pixels
   unsigned int input_height = FreeImage_GetHeight(input_bitmap); // In pixels
   unsigned int input_stride = FreeImage_GetPitch(input_bitmap); // In bytes (can include padding)
 
-  // Allocate output image. 
+  // Allocate output image on host memory. 
   FIBITMAP *output_bitmap = FreeImage_Allocate(input_width, input_height, input_bits_per_pixel);
   if (!output_bitmap) {
     std::cout << "  Failed to allocate output image in host memory!" << std::endl;
@@ -39,6 +49,18 @@ void process(char *input_file, char *output_dir)
   }
 
   // Convert to grayscale...
+  for (int y = 0; y < input_height; y++) {
+    unsigned char *input_bits = FreeImage_GetScanLine(input_bitmap, y);
+    unsigned char *output_bits = FreeImage_GetScanLine(output_bitmap, y);
+    for (int x = 0; x < input_width; x++) {
+      output_bits[FI_RGBA_RED] = input_bits[FI_RGBA_RED];
+      output_bits[FI_RGBA_GREEN] = input_bits[FI_RGBA_GREEN];
+      output_bits[FI_RGBA_BLUE] = input_bits[FI_RGBA_BLUE];
+      if (input_bits_per_pixel == 32) output_bits[FI_RGBA_ALPHA] = input_bits[FI_RGBA_ALPHA];
+      input_bits += input_bits_per_pixel;
+      output_bits += input_bits_per_pixel;
+    }
+  }
 
   // Save output image, using same format as input file, but converted to grayscale
   std::filesystem::path output_file = output_dir;
