@@ -4,7 +4,7 @@ export CXXFLAGS := -std=c++17
 
 all: bin/$(PROG_NAME)
 
-bin/$(PROG_NAME): src/*.cpp src/*.h
+bin/$(PROG_NAME): src/*.cc src/*.h
 	$(MAKE) -C src
 
 run: bin/$(PROG_NAME)
