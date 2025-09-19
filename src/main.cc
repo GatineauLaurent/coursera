@@ -20,9 +20,8 @@ static void usage(char const *msg, char const *prg)
 
 int main(int argc, char *argv[])
 {
-  char *output_dir = NULL;
-
   /* Search for output_dir argument, and check if directory exists */
+  char *output_dir = NULL;
   for (int i = 1; i < argc; i++) {
     if (!strcmp(argv[i], "--help")) usage("", argv[0]);
     if (!strcmp(argv[i], "-h")) usage("", argv[0]);
@@ -53,7 +52,7 @@ int main(int argc, char *argv[])
         std::cout << "Skip '" << input_file << "' which is not a regular file!" << std::endl;
         continue;
       }
-      process(input_file);
+      process(input_file, output_dir);
     }
   }
 

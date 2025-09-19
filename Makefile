@@ -1,6 +1,7 @@
 export PROG_NAME := grayScaleConverterNPP
 export CXX := g++
-export CXXFLAGS := -std=c++17
+export CXXFLAGS := -std=c++17 -I/opt/local/include
+export LDFLAGS := -L/opt/local/lib -lfreeimage
 
 all: bin/$(PROG_NAME)
 
