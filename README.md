@@ -47,23 +47,34 @@ Convert all input files to grayscale and put results in output directory.
 
 ### Code Organization
 
-- ```bin/``` This directory holds the binary code (must be build).
+- `bin/` This directory holds the binary code (must be build).
 
-- ```data/``` This directory contains some example data.
+- `data/` This directory contains some example data.
 
-- ```output/``` This directory will be created after `make run` command, and will contain output example data.
+- `output/` This directory will be created after `make run` command, and will contain output example data.
 
-- ```src/``` This directory contains source code of the project.
+- `src/` This directory contains source code of the project.
 
-- ```README.md``` This README file.
+- `README.md` This README file.
 
-- ```LICENSE``` License of this project.
+- `LICENSE` License of this project.
 
-- ```Makefile``` Top `Makefile` used for compilation, clean-up and run the project.
+- `Makefile` Top `Makefile` used for compilation, clean-up and run the project. Compilation flags are declared in this file.
 
 ### Source code organization
 
-- 
+- `src/Makefile` should be called by the top `Makefile`.
+
+- `src/main.cc` Contains the `main` function which is responsible of:
+  - Parsing command line arguments.
+  - Checking command line arguments correctness and display usage in case of error.
+  - Calling `process` function for each input file.
+
+- `src/process.h` Header file containing the prototype of the `process` function.
+
+- `src/process.c` Contains the function `process` function responsible of:
+  - Checking input file is a supported image file.
+  - Managing host memory for the input and output file.
 
 ### Google C++ Style Guide standards...
 Code does not meet Google C++ Style Guide standards... I know...
