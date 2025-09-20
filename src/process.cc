@@ -113,7 +113,27 @@ void process(char *input_file, char *output_dir)
     return;
   }
 
-  // NppStatus 	nppiColorTwist32f_8u_C4IR (Npp8u *pSrcDst, int nSrcDstStep, NppiSize oSizeROI, const Npp32f aTwist[3][4])
+  // RGB to grayscale conversion NTSC formula: 0.299 * Red + 0.587 * Green + 0.114 * Blue
+  // dst[0] = aTwist[0][0] * src[0] + aTwist[0][1] * src[1] + aTwist[0][2] * src[2] + aTwist[0][3] * src[3]
+  // dst[1] = aTwist[1][0] * src[0] + aTwist[1][1] * src[1] + aTwist[1][2] * src[2] + aTwist[1][3] * src[3]
+  // dst[2] = aTwist[2][0] * src[0] + aTwist[2][1] * src[1] + aTwist[2][2] * src[2] + aTwist[2][3] * src[3]
+  Npp8u * dev_RGB_plans[3];
+  Npp32f twist[3][4] = {{0.299f, 0.587f, 0.114f, 0.0f},
+                        {0.299f, 0.587f, 0.114f, 0.0f},
+                        {0.299f, 0.597f, 0.114f, 0.0f}};
+  dev_RGB_plans[0] = dev_plans[FI_RGBA_RED];
+  dev_RGB_plans[1] = dev_plans[FI_RGBA_GREEN];
+  dev_RGB_plans[2] = dev_plans[FI_RGBA_BLUE];
+  rc = nppiColorTwist32f_8u_IP3R(dev_RGB_plans, plan_step, roi, twist);
+  if (rc != NPP_SUCCESS) {
+    std::cout << "  Failed to apply grayscale conversion!" << std::endl;
+    FreeImage_Unload(input_bitmap);
+    FreeImage_Unload(output_bitmap);
+    cudaFree(dev_fi);
+    for (int i = 0; i < (input_bits_per_pixel == 24 ? 3 : 4); i++)
+      nppiFree(dev_plans[i]);
+    return;
+  }
 
   // Convert NPP plans to FreeImage (planar channel to packed)
   if (input_bits_per_pixel == 24) {

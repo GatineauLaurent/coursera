@@ -11,7 +11,7 @@ ifeq ($(USE_NPP), yes)
        NVCC := $(CUDADIR)/bin/nvcc
   NVCCFLAGS := -ccbin $(CXX) -m64 -gencode arch=compute_35,code=compute_35
    CXXFLAGS += -D_HAVE_NPP -I$(CUDADIR)/include
-    LDFLAGS += -lnppc -lnppidei -lnppisu
+    LDFLAGS += -lnppc -lnppidei -lnppisu -lnppicc
 endif
 
 export USE_NPP PROG_NAME CXX CXXFLAGS LDFLAGS NVCC NVCCFLAGS CXXFLAGS LDFLAGS
