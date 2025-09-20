@@ -3,6 +3,10 @@
 #include <cstring>
 #include <FreeImage.h>
 
+#ifdef _HAVE_NPP
+#include <npp.h>
+#endif
+
 #include "process.h"
 
 void process(char *input_file, char *output_dir)
@@ -36,9 +40,9 @@ void process(char *input_file, char *output_dir)
     FreeImage_Unload(input_bitmap);
     return;
   }
-  unsigned int input_width = FreeImage_GetWidth(input_bitmap); // In pixels
-  unsigned int input_height = FreeImage_GetHeight(input_bitmap); // In pixels
-  unsigned int input_stride = FreeImage_GetPitch(input_bitmap); // In bytes (can include padding)
+  size_t input_width = FreeImage_GetWidth(input_bitmap); // In pixels
+  size_t input_height = FreeImage_GetHeight(input_bitmap); // In pixels
+  size_t input_stride = FreeImage_GetPitch(input_bitmap); // In bytes (can include padding)
 
   // Allocate output image on host memory. 
   FIBITMAP *output_bitmap = FreeImage_Allocate(input_width, input_height, input_bits_per_pixel);
@@ -48,17 +52,110 @@ void process(char *input_file, char *output_dir)
     return;
   }
 
-  // Convert to grayscale...
+#ifdef _HAVE_NPP
+  // Convert freeimage RGB/RGBA packed format to 3/4 channels NPP format.
+  // Convert to grayscale using color twist NPP functions.
+  // Convert back to freeimage RGB/RGBA packed format.
+
+  cudaError_t err;
+  void *dev_fi;
+  size_t size = input_stride * input_height;
+
+  // Allocate memory on device for the input image.
+  err = cudaMalloc(&dev_fi, size);
+  if (err != cudaSuccess) {
+    std::cout << "  Failed to allocate device memory!" << std::endl;
+    FreeImage_Unload(input_bitmap);
+    FreeImage_Unload(output_bitmap);
+    return;
+  }
+
+  // Copy input image to the device.
+  err = cudaMemcpy(dev_fi, FreeImage_GetBits(input_bitmap), size, cudaMemcpyHostToDevice);
+  if (err != cudaSuccess) {
+    std::cout << "  Failed to copy image to the device!" << std::endl;
+    FreeImage_Unload(input_bitmap);
+    FreeImage_Unload(output_bitmap);
+    cudaFree(dev_fi);
+    return;
+  }
+
+  // Allocate NPP plans on the device
+  Npp8u *dev_plans[4];
+  int plan_step;
+
+  for (int i = 0; i < (input_bits_per_pixel == 24 ? 3 : 4); i++) {
+    dev_plans[i] = nppiMalloc_8u_C1(input_width, input_height, &plan_step);
+    if (dev_plans[i] == NULL) {
+      std::cout << "  Failed to allocate device memory!" << std::endl;
+      FreeImage_Unload(input_bitmap);
+      FreeImage_Unload(output_bitmap);
+      cudaFree(dev_fi);
+      for (int j = 0; j < i - 1; j++) nppiFree(dev_plans[j]);
+      return;
+    }
+  }
+
+  // Convert FreeImage to NPP plans (packed to planar channel)
+  NppStatus rc;
+  NppiSize roi = {(int) input_width, (int) input_height};
+  if (input_bits_per_pixel == 24) {
+    rc = nppiCopy_8u_C3P3R((Npp8u *) dev_fi, input_stride, dev_plans, plan_step, roi);
+  } else {
+    rc = nppiCopy_8u_C4P4R((Npp8u *) dev_fi, input_stride, dev_plans, plan_step, roi);
+  }
+  if (rc != NPP_SUCCESS) {
+    std::cout << "  Failed to convert packed image to planar channels!" << std::endl;
+    FreeImage_Unload(input_bitmap);
+    FreeImage_Unload(output_bitmap);
+    cudaFree(dev_fi);
+    for(int i = 0; i < (input_bits_per_pixel == 24 ? 3 : 4); i++) nppiFree(dev_plans[i]);
+    return;
+  }
+
+  // NppStatus 	nppiColorTwist32f_8u_C4IR (Npp8u *pSrcDst, int nSrcDstStep, NppiSize oSizeROI, const Npp32f aTwist[3][4])
+
+  // Convert NPP plans to FreeImage (planar channel to packed)
+  if (input_bits_per_pixel == 24) {
+    rc = nppiCopy_8u_P3C3R(dev_plans, plan_step, (Npp8u *)dev_fi, input_stride, roi);
+  } else {
+    rc = nppiCopy_8u_P4C4R(dev_plans, plan_step, (Npp8u *)dev_fi, input_stride, roi);
+  }
+  if (rc != NPP_SUCCESS) {
+    std::cout << "  Failed to convert planar channels to packed image!" << std::endl;
+    FreeImage_Unload(input_bitmap);
+    FreeImage_Unload(output_bitmap);
+    cudaFree(dev_fi);
+    for (int i = 0; i < (input_bits_per_pixel == 24 ? 3 : 4); i++) nppiFree(dev_plans[i]);
+    return;
+  }
+
+  // Copy device image to output on host.
+  err = cudaMemcpy(FreeImage_GetBits(output_bitmap), dev_fi, size, cudaMemcpyDeviceToHost);
+  if (err != cudaSuccess)
+  {
+    std::cout << "  Failed to copy device image to the host!" << std::endl;
+    FreeImage_Unload(input_bitmap);
+    FreeImage_Unload(output_bitmap);
+    cudaFree(dev_fi);
+    for (int i = 0; i < (input_bits_per_pixel == 24 ? 3 : 4); i++) nppiFree(dev_plans[i]);
+    return;
+  }
+
+  cudaFree(dev_fi);
+  for (int i = 0; i < (input_bits_per_pixel == 24 ? 3 : 4); i++) nppiFree(dev_plans[i]);
+#else
+  // CPU non optimized conversion to grayscale.
+  // RGB to grayscale conversion NTSC formula: 0.299 * Red + 0.587 * Green + 0.114 * Blue
   for (int y = 0; y < input_height; y++) {
     unsigned char *input_bits = FreeImage_GetScanLine(input_bitmap, y);
     unsigned char *output_bits = FreeImage_GetScanLine(output_bitmap, y);
     for (int x = 0; x < input_width; x++) {
-      // 0.299 * Red + 0.587 * Green + 0.114 * Blue
       float r, g, b, gray;
       r = input_bits[FI_RGBA_RED];
       g = input_bits[FI_RGBA_GREEN];
       b = input_bits[FI_RGBA_BLUE];
-      gray = 0.229f * r + 0.587f * g + 0.114 * b;
+      gray = 0.229f * r + 0.587f * g + 0.114f * b;
       if (gray > 255.0f) gray = 255.0f;
       output_bits[FI_RGBA_RED] = gray;
       output_bits[FI_RGBA_GREEN] = gray;
@@ -73,6 +170,7 @@ void process(char *input_file, char *output_dir)
       }
     }
   }
+#endif
 
   // Save output image, using same format as input file, but converted to grayscale
   std::filesystem::path output_file = output_dir;
