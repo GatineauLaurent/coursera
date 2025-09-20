@@ -1,4 +1,4 @@
-# Image grayscale conversion using NVIDIA NPP with CUDA
+# Grayscale 24b/32b image conversion using NVIDIA NPP with CUDA
 
 ## Overview
 
@@ -57,3 +57,9 @@ Convert all input files to grayscale and put results in output directory.
 
 ```LICENSE``` License of this project.
 
+Code does not meet Google C++ Style Guide standards... I know...
+- Lab code from teacher does not meet Google C++ Style Guide standards either...
+- It is not because a big company have its own coding style we should be forced to use it...
+- I am not C++ guy... I am old HPC FORTRAN guy... Project as some C++ parts, but it is mostly written in C... Why should I learn and follow a C++ coding style guide?
+
+Enjoy!
