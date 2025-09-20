@@ -43,19 +43,27 @@ Convert all input files to grayscale and put results in output directory.
 !!!Files in output directory will be overwritten!!!
 ```
 
-## Code Organization
+## Code Explanation
 
-```bin/``` This directory holds the binary code (must be build).
+### Code Organization
 
-```data/``` This directory contains some example data.
+- ```bin/``` This directory holds the binary code (must be build).
 
-```output/``` This directory is empty and will contain output example data.
+- ```data/``` This directory contains some example data.
 
-```src/``` This directory contains source code of the project.
+- ```output/``` This directory will be created after `make run` command, and will contain output example data.
 
-```README.md``` This README file.
+- ```src/``` This directory contains source code of the project.
 
-```LICENSE``` License of this project.
+- ```README.md``` This README file.
+
+- ```LICENSE``` License of this project.
+
+- ```Makefile``` Top `Makefile` used for compilation, clean-up and run the project.
+
+### Source code organization
+
+- 
 
 ### Google C++ Style Guide standards...
 Code does not meet Google C++ Style Guide standards... I know...
