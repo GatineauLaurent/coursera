@@ -1,15 +1,21 @@
-export   USE_NPP ?= yes
-export PROG_NAME := grayScaleConverterNPP
-export       CXX := g++
-export  CXXFLAGS := -std=c++17 -I/opt/local/include
-export   LDFLAGS := -L/opt/local/lib -lfreeimage
+FREEIMGDIR ?= /opt/local
+CUDADIR    ?= /usr/local/cuda
+USE_NPP    ?= yes
+
+ PROG_NAME := grayScaleConverterNPP
+       CXX := g++
+  CXXFLAGS := -std=c++17 -I$(FREEIMGDIR)/include
+   LDFLAGS := -L$(FREEIMGDIR)/lib -lfreeimage
 
 ifeq ($(USE_NPP), yes)
-  export      NVCC := /usr/local/cuda/bin/nvcc
-  export NVCCFLAGS := -ccbin $(CXX) -m64 -gencode arch=compute_35,code=compute_35
-  export  CXXFLAGS += -D_HAVE_NPP
-  export   LDFLAGS += -lnppc
+       NVCC := $(CUDADIR)/bin/nvcc
+  NVCCFLAGS := -ccbin $(CXX) -m64 -gencode arch=compute_35,code=compute_35
+   CXXFLAGS += -D_HAVE_NPP -I$(CUDADIR)/include
+    LDFLAGS += -lnppc
+
 endif
+
+export USE_NPP PROG_NAME CXX CXXFLAGS LDFLAGS NVCC NVCCFLAGS CXXFLAGS LDFLAGS
 
 all: bin/$(PROG_NAME)
 
