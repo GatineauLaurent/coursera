@@ -124,6 +124,7 @@ void process(char *input_file, char *output_dir)
   dev_RGB_plans[0] = dev_plans[FI_RGBA_RED];
   dev_RGB_plans[1] = dev_plans[FI_RGBA_GREEN];
   dev_RGB_plans[2] = dev_plans[FI_RGBA_BLUE];
+  // Use inplace conversion.
   rc = nppiColorTwist32f_8u_IP3R(dev_RGB_plans, plan_step, roi, twist);
   if (rc != NPP_SUCCESS) {
     std::cout << "  Failed to apply grayscale conversion!" << std::endl;

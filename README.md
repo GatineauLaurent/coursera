@@ -59,7 +59,11 @@ Convert all input files to grayscale and put results in output directory.
 
 - `LICENSE` License of this project.
 
-- `Makefile` Top `Makefile` used for compilation, clean-up and run the project. Compilation flags are declared in this file.
+- `Makefile` Top `Makefile` used for:
+  - Compilation with `make`.
+  - Clean-up with `make clean`.
+  - Run the project with `make run`.
+  - Compilation flags and include/library locations are declared in this file.
 
 ### Source code organization
 
@@ -72,9 +76,19 @@ Convert all input files to grayscale and put results in output directory.
 
 - `src/process.h` Header file containing the prototype of the `process` function.
 
-- `src/process.c` Contains the function `process` function responsible of:
-  - Checking input file is a supported image file.
-  - Managing host memory for the input and output file.
+- `src/process.cc` Contains the function `process` function responsible of:
+  - Checking input file is a supported image file (`FreeImage_GetFileType`, `FreeImage_GetImageType`, `FreeImage_GetBPP`).
+  - Managing host memory for the input and output file (`FreeImage_Allocate`, `FreeImage_Unload`).
+  - Reading input file and writing input file using FreeImage library (`FreeImage_Load`, `FreeImage_Save`).
+  - Managing device memory for the input file, and NPP plans (`cudaMalloc`, `nppiMalloc_8u_C1`, `nppiFree`, `cudaFree`).
+  - Copying data fro host to device and device to host (`cudaMemcpy`)
+  - Converting packed image to planar channels and vice-versa (`nppiCopy_8u_C3P3R`, `nppiCopy_8u_C4P4R`, `nppiCopy_8u_P3C3R`, `nppiCopy_8u_P4C4R`).
+  - Converting to grayscale using `nppiColorTwist32f_8u_IP3R` function.
+
+### Miscellaneous
+
+- `make run` will build the project if needed.
+- `make USE_NPP=no` will build the project without using CUDA/NPP support. Grayscale conversion will be done on CPU. Not optimized, only for checking purpose.
 
 ### Google C++ Style Guide standards...
 Code does not meet Google C++ Style Guide standards... I know...
@@ -83,4 +97,4 @@ Code does not meet Google C++ Style Guide standards... I know...
 - I am not C++ guy... I am old HPC FORTRAN guy... Project as some C++ parts, but it is mostly written in C... Why should I learn and follow a C++ coding style guide?
 - Is this C++ coding style courses, or CUDA programming courses?
 
-### Enjoy!
+### Enjoy your review!
