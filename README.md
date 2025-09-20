@@ -1,0 +1,59 @@
+# Image grayscale conversion using NVIDIA NPP with CUDA
+
+## Overview
+
+This project is submission for the assignement of the coursera's module CUDA at Scale for the Enterprise (Independent Project).
+
+The program will perform grayscale conversion on list of 24b or 32b images. Output images will be in same file format as input image, using same encoding format (24b or 32b per pixel).
+
+Why not converting directly to 8b grayscale image?
+- goal of assignement is to use NVIDIA NPP functions...
+- professionnal image manipulation software work on separate color channels...
+- fun...
+
+## Requirements
+
+- Linux, tested only in Cousrera lab enviromnent
+- FreeImage
+- NVIDIA NPP with CUDA
+
+## How to build and run
+
+- Clone and build the project:
+```
+$ git clone https://github.com/GatineauLaurent/coursera.git
+$ cd coursera
+$ make
+```
+
+- Run the project using provided images:
+```
+$ make run
+```
+
+- Run the project by yourself:
+```
+$ bin/grayScaleConverterNPP --help
+
+bin/grayScaleConverterNPP [--help|-h] --input [file1|file2|...] --output_dir output
+   --input: list of input files
+   --output_dir: output directory (it must exist!)
+
+Convert all input files to grayscale and put results in output directory.
+!!!Files in output directory will be overwritten!!!
+```
+
+## Code Organization
+
+```bin/``` This directory holds the binary code (must be build).
+
+```data/``` This directory contains some example data.
+
+```output/``` This directory is empty and will contain output example data.
+
+```src/``` This directory contains source code of the project.
+
+```README.md``` This README file.
+
+```LICENSE``` License of this project.
+

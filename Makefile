@@ -22,6 +22,8 @@ bin/$(PROG_NAME): src/*.cc src/*.h
 	$(MAKE) -C src
 
 run: bin/$(PROG_NAME)
+	rm -rf output
+	mkdir -p output
 	bin/$(PROG_NAME) --input data/* --output_dir output
 
 clean:
