@@ -1,4 +1,4 @@
-# Multi-GPU Grayscale 24b/32b image conversion using NVIDIA NPP with CUDA
+# Multi-GPU Grayscale 24b/32b images conversion using NVIDIA NPP with CUDA
 
 ## Overview
 
