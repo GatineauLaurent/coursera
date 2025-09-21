@@ -1,10 +1,10 @@
-# Grayscale 24b/32b image conversion using NVIDIA NPP with CUDA
+# Multi-GPU Grayscale 24b/32b image conversion using NVIDIA NPP with CUDA
 
 ## Overview
 
 This project is submission for the assignement of the coursera's module CUDA at Scale for the Enterprise (Independent Project).
 
-The program will perform grayscale conversion on list of 24b or 32b images. Output images will be in same file format as input image, using same encoding format (24b or 32b per pixel).
+The program will perform grayscale conversion on list of 24b or 32b images. Output images will be in same file format as input image, using same encoding format (24b or 32b per pixel). If multiple GPU are available then they will be automatically used (each GPU will process part of the input files).
 
 Why not converting directly to 8b grayscale image?
 - goal of assignement is to use NVIDIA NPP functions...
@@ -72,7 +72,8 @@ Convert all input files to grayscale and put results in output directory.
 - `src/main.cc` Contains the `main` function which is responsible of:
   - Parsing command line arguments.
   - Checking command line arguments correctness and display usage in case of error.
-  - Calling `process` function for each input file.
+  - Starting 1 thread per GPU and attach the thread to its GPU.
+  - Each thread will call the `process` function per input files it have to deal with.
 
 - `src/process.h` Header file containing the prototype of the `process` function.
 
@@ -84,6 +85,15 @@ Convert all input files to grayscale and put results in output directory.
   - Copying data fro host to device and device to host (`cudaMemcpy`)
   - Converting packed image to planar channels and vice-versa (`nppiCopy_8u_C3P3R`, `nppiCopy_8u_C4P4R`, `nppiCopy_8u_P3C3R`, `nppiCopy_8u_P4C4R`).
   - Converting to grayscale using `nppiColorTwist32f_8u_IP3R` function.
+
+### Multithreading
+
+Simple multithreading using dynamic load balancing is implemented:
+- Threads are sharing the input list files.
+- Threads are sharing a counter to know which is the next input file to process. This counter is accessed and incremented in atomic way using mutex.
+- Threads exit when all input files have been processed.
+
+The CUDA function `cudaSetDevice` is called at the beginning of each thread, so all CUDA calls perform in `process` function are done on the GPU attached to its thread.
 
 ### Miscellaneous
 
