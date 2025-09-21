@@ -2,8 +2,14 @@
 #include <filesystem>
 #include <cstdlib>
 #include <cstring>
+#include <vector>
 #include <pthread.h>
 #include <unistd.h>
+
+#ifdef _HAVE_NPP
+#include <cuda.h>
+#include <cuda_runtime_api.h>
+#endif
 
 #include "process.h"
 
@@ -110,7 +116,7 @@ int main(int argc, char *argv[])
 #ifdef _HAVE_NPP
   // Use 1 thread per GPU.
   int num_threads = 0;
-  cudaGetDevicCount(&num_threads);
+  cudaGetDeviceCount(&num_threads);
   if (num_threads <= 0) {
     std::cout << "No GPU detected!" << std::endl;
     return 1;
