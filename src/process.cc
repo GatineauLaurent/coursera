@@ -11,32 +11,30 @@
 
 void process(char *input_file, char *output_dir)
 {
-  std::cout << "Process file \"" << input_file << "\"..." << std::endl;
-
   // Check if file format is supported by FreeImage, and if file can be read.
   FREE_IMAGE_FORMAT fif = FreeImage_GetFileType(input_file, 0);
   if (fif == FIF_UNKNOWN) {
-    std::cout << "  File format not supported by FreeImage!" << std::endl;
+    std::cout << input_file << ": File format not supported by FreeImage!" << std::endl;
     return;
   }
 
   // Load input file into host memory.
   FIBITMAP *input_bitmap = FreeImage_Load(fif, input_file, 0);
   if (!input_bitmap) {
-    std::cout << "  Failed to load file using FreeImage!" << std::endl;
+    std::cout << input_file << ": Failed to load file using FreeImage!" << std::endl;
     return;
   }
 
   // Get input image information.
   FREE_IMAGE_TYPE input_fit = FreeImage_GetImageType(input_bitmap);
   if (input_fit != FIT_BITMAP) {
-    std::cout << "  Image type not supported (" << input_fit << "!= FIT_BITMAP (" << FIT_BITMAP << "))!" << std::endl;
+    std::cout << input_file << ": Image type not supported (" << input_fit << "!= FIT_BITMAP (" << FIT_BITMAP << "))!" << std::endl;
     FreeImage_Unload(input_bitmap);
     return;
   }
   unsigned int input_bits_per_pixel = FreeImage_GetBPP(input_bitmap);
   if (input_bits_per_pixel != 24 && input_bits_per_pixel != 32) {
-    std::cout << "  Bits per pixel not supported (" << input_bits_per_pixel << " != 24 or 32)" << std::endl;
+    std::cout << input_file << ": Bits per pixel not supported (" << input_bits_per_pixel << " != 24 or 32)" << std::endl;
     FreeImage_Unload(input_bitmap);
     return;
   }
@@ -47,7 +45,7 @@ void process(char *input_file, char *output_dir)
   // Allocate output image on host memory. 
   FIBITMAP *output_bitmap = FreeImage_Allocate(input_width, input_height, input_bits_per_pixel);
   if (!output_bitmap) {
-    std::cout << "  Failed to allocate output image in host memory!" << std::endl;
+    std::cout << input_file << ": Failed to allocate output image in host memory!" << std::endl;
     FreeImage_Unload(input_bitmap);
     return;
   }
@@ -64,7 +62,7 @@ void process(char *input_file, char *output_dir)
   // Allocate memory on device for the input image.
   err = cudaMalloc(&dev_fi, size);
   if (err != cudaSuccess) {
-    std::cout << "  Failed to allocate device memory!" << std::endl;
+    std::cout << input_file << ": Failed to allocate device memory!" << std::endl;
     FreeImage_Unload(input_bitmap);
     FreeImage_Unload(output_bitmap);
     return;
@@ -73,7 +71,7 @@ void process(char *input_file, char *output_dir)
   // Copy input image to the device.
   err = cudaMemcpy(dev_fi, FreeImage_GetBits(input_bitmap), size, cudaMemcpyHostToDevice);
   if (err != cudaSuccess) {
-    std::cout << "  Failed to copy image to the device!" << std::endl;
+    std::cout << input_file << ": Failed to copy image to the device!" << std::endl;
     FreeImage_Unload(input_bitmap);
     FreeImage_Unload(output_bitmap);
     cudaFree(dev_fi);
@@ -87,7 +85,7 @@ void process(char *input_file, char *output_dir)
   for (int i = 0; i < (input_bits_per_pixel == 24 ? 3 : 4); i++) {
     dev_plans[i] = nppiMalloc_8u_C1(input_width, input_height, &plan_step);
     if (dev_plans[i] == NULL) {
-      std::cout << "  Failed to allocate device memory!" << std::endl;
+      std::cout << input_file << ": Failed to allocate device memory!" << std::endl;
       FreeImage_Unload(input_bitmap);
       FreeImage_Unload(output_bitmap);
       cudaFree(dev_fi);
@@ -105,7 +103,7 @@ void process(char *input_file, char *output_dir)
     rc = nppiCopy_8u_C4P4R((Npp8u *) dev_fi, input_stride, dev_plans, plan_step, roi);
   }
   if (rc != NPP_SUCCESS) {
-    std::cout << "  Failed to convert packed image to planar channels!" << std::endl;
+    std::cout << input_file << ": Failed to convert packed image to planar channels!" << std::endl;
     FreeImage_Unload(input_bitmap);
     FreeImage_Unload(output_bitmap);
     cudaFree(dev_fi);
@@ -127,7 +125,7 @@ void process(char *input_file, char *output_dir)
   // Use inplace conversion.
   rc = nppiColorTwist32f_8u_IP3R(dev_RGB_plans, plan_step, roi, twist);
   if (rc != NPP_SUCCESS) {
-    std::cout << "  Failed to apply grayscale conversion!" << std::endl;
+    std::cout << input_file << ": Failed to apply grayscale conversion!" << std::endl;
     FreeImage_Unload(input_bitmap);
     FreeImage_Unload(output_bitmap);
     cudaFree(dev_fi);
@@ -143,7 +141,7 @@ void process(char *input_file, char *output_dir)
     rc = nppiCopy_8u_P4C4R(dev_plans, plan_step, (Npp8u *)dev_fi, input_stride, roi);
   }
   if (rc != NPP_SUCCESS) {
-    std::cout << "  Failed to convert planar channels to packed image!" << std::endl;
+    std::cout << input_file << ": Failed to convert planar channels to packed image!" << std::endl;
     FreeImage_Unload(input_bitmap);
     FreeImage_Unload(output_bitmap);
     cudaFree(dev_fi);
@@ -155,7 +153,7 @@ void process(char *input_file, char *output_dir)
   err = cudaMemcpy(FreeImage_GetBits(output_bitmap), dev_fi, size, cudaMemcpyDeviceToHost);
   if (err != cudaSuccess)
   {
-    std::cout << "  Failed to copy device image to the host!" << std::endl;
+    std::cout << input_file << ": Failed to copy device image to the host!" << std::endl;
     FreeImage_Unload(input_bitmap);
     FreeImage_Unload(output_bitmap);
     cudaFree(dev_fi);
@@ -197,9 +195,9 @@ void process(char *input_file, char *output_dir)
   std::filesystem::path output_file = output_dir;
   output_file /= std::filesystem::path(input_file).filename();
   if (!FreeImage_Save(fif, output_bitmap, output_file.string().c_str(), 0)) {
-    std::cout << "  Failed to save output file " << output_file << "!" << std::endl;
+    std::cout << input_file << ": Failed to save output file " << output_file << "!" << std::endl;
   } else {
-    std::cout << "  Successfull converted to grayscale and saved into " << output_file << "!" << std::endl;
+    std::cout << input_file << ": Successfull converted to grayscale and saved into " << output_file << "!" << std::endl;
   }
   
   // Free input and output image from host memory.
